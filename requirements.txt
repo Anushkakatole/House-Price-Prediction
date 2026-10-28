@@ -1,4 +1,4 @@
 streamlit
-pandas==<COLAB_PANDAS_VERSION>
-numpy==<COLAB_NUMPY_VERSION>
-scikit-learn==<COLAB_SKLEARN_VERSION>
+pandas
+numpy
+scikit-learn==1.6.1
