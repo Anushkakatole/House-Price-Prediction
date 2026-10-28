@@ -7,8 +7,7 @@ import pickle
 @st.cache_resource
 def load_model():
     with open("house_price_model.pkl", "rb") as file:
-        model = pickle.load(file)
-    return model
+        return pickle.load(file)
 
 model = load_model()
 
@@ -22,10 +21,13 @@ st.set_page_config(
 # App title
 st.title("🏠 House Price Prediction")
 st.write(
-    "Enter the house details below to estimate its selling price."
+    "Enter the property details below to estimate its selling price."
 )
 
-st.info("This model was trained on US housing data. Prices are predicted in US dollars ($).")
+st.info(
+    "This model uses housing data from Ames, Iowa, USA. "
+    "Predicted prices are in US dollars ($)."
+)
 
 # User inputs
 st.subheader("Enter House Details")
@@ -34,7 +36,8 @@ gr_liv_area = st.number_input(
     "Living Area (square feet)",
     min_value=100,
     max_value=10000,
-    value=1800
+    value=1800,
+    step=50
 )
 
 bedrooms = st.number_input(
@@ -45,10 +48,40 @@ bedrooms = st.number_input(
     step=1
 )
 
-neighborhood = st.text_input(
-    "Neighborhood Code",
-    value="NAmes",
-    help="Enter a neighborhood code found in the training dataset, such as NAmes."
+# Neighborhood dropdown
+neighborhoods = [
+    "Blmngtn",
+    "Blueste",
+    "BrDale",
+    "BrkSide",
+    "ClearCr",
+    "CollgCr",
+    "Crawfor",
+    "Edwards",
+    "Gilbert",
+    "IDOTRR",
+    "MeadowV",
+    "Mitchel",
+    "NAmes",
+    "NoRidge",
+    "NPkVill",
+    "NridgHt",
+    "NWAmes",
+    "OldTown",
+    "SWISU",
+    "Sawyer",
+    "SawyerW",
+    "Somerst",
+    "StoneBr",
+    "Timber",
+    "Veenker"
+]
+
+neighborhood = st.selectbox(
+    "Select Neighborhood",
+    options=neighborhoods,
+    index=neighborhoods.index("NAmes"),
+    help="Choose a neighborhood from the Ames, Iowa housing dataset."
 )
 
 overall_qual = st.slider(
@@ -66,30 +99,35 @@ year_built = st.number_input(
     step=1
 )
 
-# Prediction button
+st.caption(
+    "Select a neighborhood from the list. "
+    "These options belong to the US dataset, not Indian cities."
+)
+
+# Prediction
 if st.button("Predict House Price", type="primary"):
-    if not neighborhood.strip():
-        st.error("Please enter a neighborhood code.")
-    else:
-        house = pd.DataFrame([{
-            "GrLivArea": gr_liv_area,
-            "BedroomAbvGr": bedrooms,
-            "Neighborhood": neighborhood.strip(),
-            "OverallQual": overall_qual,
-            "YearBuilt": year_built
-        }])
+    house = pd.DataFrame([{
+        "GrLivArea": gr_liv_area,
+        "BedroomAbvGr": bedrooms,
+        "Neighborhood": neighborhood,
+        "OverallQual": overall_qual,
+        "YearBuilt": year_built
+    }])
 
-        try:
-            predicted_price = model.predict(house)[0]
+    try:
+        predicted_price = model.predict(house)[0]
 
-            st.success("Prediction completed!")
-            st.metric(
-                label="Estimated House Selling Price",
-                value=f"${predicted_price:,.2f}"
-            )
-            st.caption(
-                "This is a machine learning estimate, not a guaranteed market price."
-            )
+        st.success("Prediction completed!")
 
-        except Exception as error:
-            st.error(f"Prediction failed: {error}")
+        st.metric(
+            label="Estimated House Selling Price",
+            value=f"${predicted_price:,.2f}"
+        )
+
+        st.caption(
+            "This is a machine learning estimate, "
+            "not a guaranteed market price."
+        )
+
+    except Exception as error:
+        st.error(f"Prediction failed: {error}")
