@@ -2,32 +2,53 @@
 import streamlit as st
 import pandas as pd
 import pickle
+import sklearn
+from pathlib import Path
 
-# Load trained model
-@st.cache_resource
-def load_model():
-    with open("house_price_model.pkl", "rb") as file:
-        return pickle.load(file)
-
-model = load_model()
-
-# Page configuration
+# Page configuration — must come before other Streamlit commands
 st.set_page_config(
     page_title="House Price Predictor",
     page_icon="🏠",
     layout="centered"
 )
 
+# Load trained model safely
+@st.cache_resource
+def load_model():
+    model_path = Path(__file__).parent / "house_price_model.pkl"
+
+    with open(model_path, "rb") as file:
+        return pickle.load(file)
+
+
 # App title
 st.title("🏠 House Price Prediction")
-st.write(
-    "Enter the property details below to estimate its selling price."
-)
+st.write("Enter the property details below to estimate its selling price.")
 
 st.info(
     "This model uses housing data from Ames, Iowa, USA. "
     "Predicted prices are in US dollars ($)."
 )
+
+# Display model-loading errors clearly
+try:
+    model = load_model()
+except Exception as error:
+    st.error("Unable to load the house price prediction model.")
+    st.warning(
+        "The saved model may be incompatible with the installed "
+        "scikit-learn version. Please regenerate the model using "
+        "a compatible environment."
+    )
+
+    with st.expander("Technical details"):
+        st.code(
+            f"Error: {type(error).__name__}: {error}\n"
+            f"Installed scikit-learn: {sklearn.__version__}"
+        )
+
+    st.stop()
+
 
 # User inputs
 st.subheader("Enter House Details")
@@ -48,33 +69,12 @@ bedrooms = st.number_input(
     step=1
 )
 
-# Neighborhood dropdown
 neighborhoods = [
-    "Blmngtn",
-    "Blueste",
-    "BrDale",
-    "BrkSide",
-    "ClearCr",
-    "CollgCr",
-    "Crawfor",
-    "Edwards",
-    "Gilbert",
-    "IDOTRR",
-    "MeadowV",
-    "Mitchel",
-    "NAmes",
-    "NoRidge",
-    "NPkVill",
-    "NridgHt",
-    "NWAmes",
-    "OldTown",
-    "SWISU",
-    "Sawyer",
-    "SawyerW",
-    "Somerst",
-    "StoneBr",
-    "Timber",
-    "Veenker"
+    "Blmngtn", "Blueste", "BrDale", "BrkSide", "ClearCr",
+    "CollgCr", "Crawfor", "Edwards", "Gilbert", "IDOTRR",
+    "MeadowV", "Mitchel", "NAmes", "NoRidge", "NPkVill",
+    "NridgHt", "NWAmes", "OldTown", "SWISU", "Sawyer",
+    "SawyerW", "Somerst", "StoneBr", "Timber", "Veenker"
 ]
 
 neighborhood = st.selectbox(
@@ -100,8 +100,8 @@ year_built = st.number_input(
 )
 
 st.caption(
-    "Select a neighborhood from the list. "
-    "These options belong to the US dataset, not Indian cities."
+    "These neighborhoods belong to the US housing dataset, "
+    "not Indian cities."
 )
 
 # Prediction
@@ -118,16 +118,17 @@ if st.button("Predict House Price", type="primary"):
         predicted_price = model.predict(house)[0]
 
         st.success("Prediction completed!")
-
         st.metric(
             label="Estimated House Selling Price",
             value=f"${predicted_price:,.2f}"
         )
-
         st.caption(
             "This is a machine learning estimate, "
             "not a guaranteed market price."
         )
 
     except Exception as error:
-        st.error(f"Prediction failed: {error}")
+        st.error("Prediction failed. Please check the model inputs.")
+
+        with st.expander("Technical details"):
+            st.code(f"{type(error).__name__}: {error}")
